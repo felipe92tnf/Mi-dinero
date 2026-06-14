@@ -1,4 +1,5 @@
 import { CATEGORIES, type ExpenseFormData } from '../types/expense'
+import { inputClass, labelClass, sectionClass } from './ui/styles'
 
 interface ExpenseFormProps {
   form: ExpenseFormData
@@ -7,9 +8,6 @@ interface ExpenseFormProps {
   onSubmit: () => void
   onCancel: () => void
 }
-
-const inputClass =
-  'w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
 
 export function ExpenseForm({
   form,
@@ -33,14 +31,14 @@ export function ExpenseForm({
   return (
     <section
       id="expense-form"
-      className="scroll-mt-4 rounded-xl border border-zinc-800 bg-zinc-900 p-4 sm:p-5"
+      className={`scroll-mt-4 ${sectionClass} p-3 sm:p-4`}
     >
-      <h2 className="mb-4 text-lg font-medium text-white">
+      <h2 className="mb-3 text-base font-medium text-white">
         {editingId ? 'Editar gasto' : 'Nuevo gasto'}
       </h2>
 
-      <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-        <label className="flex flex-col gap-1.5 text-sm text-zinc-400 sm:col-span-2">
+      <form onSubmit={handleSubmit} className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
+        <label className={`${labelClass} sm:col-span-2`}>
           <span>Nombre</span>
           <input
             type="text"
@@ -54,7 +52,7 @@ export function ExpenseForm({
           />
         </label>
 
-        <label className="flex flex-col gap-1.5 text-sm text-zinc-400">
+        <label className={labelClass}>
           <span>Cantidad (€)</span>
           <input
             type="number"
@@ -69,7 +67,7 @@ export function ExpenseForm({
           />
         </label>
 
-        <label className="flex flex-col gap-1.5 text-sm text-zinc-400">
+        <label className={labelClass}>
           <span>Fecha</span>
           <input
             type="date"
@@ -80,7 +78,7 @@ export function ExpenseForm({
           />
         </label>
 
-        <label className="flex flex-col gap-1.5 text-sm text-zinc-400">
+        <label className={labelClass}>
           <span>Tipo</span>
           <select
             value={form.tipo}
@@ -94,8 +92,8 @@ export function ExpenseForm({
           </select>
         </label>
 
-        <label className="flex flex-col gap-1.5 text-sm text-zinc-400">
-          <span>Categoría (opcional)</span>
+        <label className={labelClass}>
+          <span>Categoría</span>
           <select
             value={form.categoria}
             onChange={(e) =>
@@ -112,10 +110,10 @@ export function ExpenseForm({
           </select>
         </label>
 
-        <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row">
+        <div className="flex flex-col gap-2 pt-1 sm:col-span-2 sm:flex-row">
           <button
             type="submit"
-            className="flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 font-medium text-white transition hover:bg-emerald-500"
+            className="min-h-10 flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-900/30 transition hover:bg-emerald-500 active:scale-[0.99]"
           >
             {editingId ? 'Guardar cambios' : 'Añadir gasto'}
           </button>
@@ -123,7 +121,7 @@ export function ExpenseForm({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-lg border border-zinc-700 px-4 py-2.5 font-medium text-zinc-300 transition hover:bg-zinc-800"
+              className="min-h-10 rounded-lg border border-zinc-700/80 px-4 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-800"
             >
               Cancelar
             </button>

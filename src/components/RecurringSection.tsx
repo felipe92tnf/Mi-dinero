@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { CATEGORIES, type RecurringExpense, type RecurringFormData } from '../types/expense'
 import { formatCurrency } from '../utils/storage'
+import {
+  actionBtnDangerClass,
+  actionBtnNeutralClass,
+  inputClass,
+  labelClass,
+} from './ui/styles'
 
 interface RecurringSectionProps {
   recurring: RecurringExpense[]
@@ -15,9 +21,6 @@ interface RecurringSectionProps {
   onToggleActive: (id: string) => void
   onGenerate: () => void
 }
-
-const inputClass =
-  'w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
 
 export function RecurringSection({
   recurring,
@@ -53,38 +56,41 @@ export function RecurringSection({
   }
 
   return (
-    <section id="recurring-section" className="scroll-mt-4 rounded-xl border border-zinc-800 bg-zinc-900">
-      <div className="flex flex-col gap-3 border-b border-zinc-800 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+    <section
+      id="recurring-section"
+      className="scroll-mt-4 rounded-xl border border-dashed border-zinc-800/80 bg-zinc-900/40"
+    >
+      <div className="flex flex-col gap-2 border-b border-zinc-800/50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
         <div>
-          <h2 className="text-base font-medium text-white">
+          <h2 className="text-sm font-medium text-zinc-400">
             Gastos fijos habituales
           </h2>
-          <p className="mt-0.5 text-xs text-zinc-500">
+          <p className="mt-0.5 text-[11px] text-zinc-600">
             {recurring.length} configurado{recurring.length === 1 ? '' : 's'}
           </p>
         </div>
         <button
           type="button"
           onClick={onGenerate}
-          className="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-sm font-medium text-blue-300 transition hover:bg-blue-500/20"
+          className={`${actionBtnNeutralClass} border-blue-500/20 text-blue-300/80 hover:bg-blue-500/10`}
         >
           Generar del mes
         </button>
       </div>
 
       {generateMessage && (
-        <p className="border-b border-zinc-800 px-4 py-2 text-sm text-zinc-400 sm:px-5">
+        <p className="border-b border-zinc-800/50 px-3 py-2 text-xs text-zinc-500 sm:px-4">
           {generateMessage}
         </p>
       )}
 
-      <details ref={formDetailsRef} className="border-b border-zinc-800">
-        <summary className="cursor-pointer px-4 py-3 text-sm text-zinc-300 select-none hover:text-white sm:px-5">
+      <details ref={formDetailsRef} className="border-b border-zinc-800/50">
+        <summary className="cursor-pointer px-3 py-2.5 text-xs text-zinc-500 select-none hover:text-zinc-300 sm:px-4">
           {editingId ? 'Editar gasto habitual' : 'Añadir gasto habitual'}
         </summary>
 
-        <form onSubmit={handleSubmit} className="grid gap-3 px-4 pb-4 sm:grid-cols-2 sm:px-5">
-          <label className="flex flex-col gap-1 text-sm text-zinc-400 sm:col-span-2">
+        <form onSubmit={handleSubmit} className="grid gap-2.5 px-3 pb-3 sm:grid-cols-2 sm:px-4">
+          <label className={`${labelClass} sm:col-span-2`}>
             <span>Nombre</span>
             <input
               type="text"
@@ -96,7 +102,7 @@ export function RecurringSection({
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm text-zinc-400">
+          <label className={labelClass}>
             <span>Cantidad (€)</span>
             <input
               type="number"
@@ -110,7 +116,7 @@ export function RecurringSection({
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm text-zinc-400">
+          <label className={labelClass}>
             <span>Día del mes</span>
             <input
               type="number"
@@ -123,7 +129,7 @@ export function RecurringSection({
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm text-zinc-400">
+          <label className={labelClass}>
             <span>Categoría</span>
             <select
               value={form.categoria}
@@ -141,12 +147,12 @@ export function RecurringSection({
             </select>
           </label>
 
-          <label className="flex items-center gap-2 text-sm text-zinc-300">
+          <label className="flex items-center gap-2 text-xs text-zinc-500">
             <input
               type="checkbox"
               checked={form.activo}
               onChange={(e) => update('activo', e.target.checked)}
-              className="size-4 rounded border-zinc-600 bg-zinc-950 text-emerald-600 focus:ring-emerald-500"
+              className="size-3.5 rounded border-zinc-600 bg-zinc-950 text-emerald-600 focus:ring-emerald-500"
             />
             Activo
           </label>
@@ -154,7 +160,7 @@ export function RecurringSection({
           <div className="flex gap-2 sm:col-span-2">
             <button
               type="submit"
-              className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-500"
+              className={`${actionBtnNeutralClass} flex-1 border-emerald-500/30 text-emerald-400/90 hover:bg-emerald-500/10`}
             >
               {editingId ? 'Guardar' : 'Añadir'}
             </button>
@@ -162,7 +168,7 @@ export function RecurringSection({
               <button
                 type="button"
                 onClick={onCancel}
-                className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-800"
+                className={actionBtnNeutralClass}
               >
                 Cancelar
               </button>
@@ -172,15 +178,15 @@ export function RecurringSection({
       </details>
 
       {recurring.length === 0 ? (
-        <p className="px-4 py-4 text-center text-sm text-zinc-500 sm:px-5">
+        <p className="px-3 py-3 text-center text-xs text-zinc-600 sm:px-4">
           Sin gastos habituales configurados.
         </p>
       ) : (
-        <ul className="divide-y divide-zinc-800">
+        <ul className="divide-y divide-zinc-800/40">
           {recurring.map((item) => (
             <li
               key={item.id}
-              className={`px-4 py-3 sm:px-5 ${
+              className={`px-3 py-2.5 sm:px-4 ${
                 editingId === item.id ? 'bg-emerald-500/5' : ''
               }`}
             >
@@ -188,49 +194,49 @@ export function RecurringSection({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <p
-                      className={`truncate text-sm font-medium ${item.activo ? 'text-white' : 'text-zinc-500'}`}
+                      className={`truncate text-xs font-medium ${item.activo ? 'text-zinc-300' : 'text-zinc-600'}`}
                     >
                       {item.nombre}
                     </p>
                     <span
-                      className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs ${
+                      className={`rounded-md border px-1 py-0.5 text-[10px] ${
                         item.activo
-                          ? 'bg-emerald-500/20 text-emerald-300'
-                          : 'bg-zinc-800 text-zinc-500'
+                          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400/80'
+                          : 'border-zinc-700/50 bg-zinc-800/40 text-zinc-600'
                       }`}
                     >
                       {item.activo ? 'On' : 'Off'}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs text-zinc-500">
+                  <p className="mt-0.5 text-[10px] text-zinc-600">
                     Día {item.diaMes}
                     {item.categoria ? ` · ${item.categoria}` : ''}
                   </p>
                 </div>
-                <p className="shrink-0 text-sm font-semibold text-emerald-400">
+                <p className="shrink-0 text-xs font-medium text-zinc-400">
                   {formatCurrency(item.cantidad)}
                 </p>
               </div>
 
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex gap-1.5">
                 <button
                   type="button"
                   onClick={() => onToggleActive(item.id)}
-                  className="rounded-md border border-zinc-700 px-2 py-1 text-xs text-zinc-300 transition hover:bg-zinc-800"
+                  className={actionBtnNeutralClass}
                 >
                   {item.activo ? 'Desactivar' : 'Activar'}
                 </button>
                 <button
                   type="button"
                   onClick={() => onEdit(item)}
-                  className="rounded-md border border-zinc-700 px-2 py-1 text-xs text-zinc-300 transition hover:bg-zinc-800"
+                  className={actionBtnNeutralClass}
                 >
                   Editar
                 </button>
                 <button
                   type="button"
                   onClick={() => onDelete(item.id)}
-                  className="rounded-md border border-red-500/30 px-2 py-1 text-xs text-red-400 transition hover:bg-red-500/10"
+                  className={actionBtnDangerClass}
                 >
                   Eliminar
                 </button>

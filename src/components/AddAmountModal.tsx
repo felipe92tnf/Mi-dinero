@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { AddAmountFormData, Expense } from '../types/expense'
 import { formatCurrency, todayDate } from '../utils/storage'
+import { inputClass, labelClass } from './ui/styles'
 
 interface AddAmountModalProps {
   expense: Expense
@@ -8,22 +9,30 @@ interface AddAmountModalProps {
   onCancel: () => void
 }
 
-const inputClass =
-  'w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
+function emptyForm(): AddAmountFormData {
+  return {
+    importe: '',
+    fecha: todayDate(),
+  }
+}
 
 export function AddAmountModal({
   expense,
   onConfirm,
   onCancel,
 }: AddAmountModalProps) {
-  const [form, setForm] = useState<AddAmountFormData>({
-    importe: '',
-    fecha: todayDate(),
-  })
+  const [form, setForm] = useState<AddAmountFormData>(emptyForm)
+
+  useEffect(() => {
+    setForm(emptyForm())
+  }, [expense.id])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    onConfirm(form)
+    onConfirm({
+      importe: form.importe,
+      fecha: form.fecha || todayDate(),
+    })
   }
 
   return (
@@ -42,7 +51,7 @@ export function AddAmountModal({
         </p>
 
         <form onSubmit={handleSubmit} className="mt-4 grid gap-3">
-          <label className="flex flex-col gap-1.5 text-sm text-zinc-400">
+          <label className={labelClass}>
             <span>Importe a sumar (€)</span>
             <input
               type="number"
@@ -60,7 +69,7 @@ export function AddAmountModal({
             />
           </label>
 
-          <label className="flex flex-col gap-1.5 text-sm text-zinc-400">
+          <label className={labelClass}>
             <span>Fecha</span>
             <input
               type="date"

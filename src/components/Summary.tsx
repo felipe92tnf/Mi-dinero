@@ -1,4 +1,5 @@
 import { formatCurrency } from '../utils/storage'
+import { sectionClass } from './ui/styles'
 
 interface SummaryProps {
   total: number
@@ -8,34 +9,33 @@ interface SummaryProps {
 }
 
 export function Summary({ total, fijos, variables, count }: SummaryProps) {
-  const items = [
-    { label: 'Total gastado', value: formatCurrency(total), highlight: true },
-    { label: 'Gastos fijos', value: formatCurrency(fijos) },
-    { label: 'Gastos variables', value: formatCurrency(variables) },
-    { label: 'Número de gastos', value: String(count) },
+  const secondary = [
+    { label: 'Fijos', value: formatCurrency(fijos) },
+    { label: 'Variables', value: formatCurrency(variables) },
+    { label: 'Gastos', value: String(count) },
   ]
 
   return (
-    <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {items.map((item) => (
-        <div
-          key={item.label}
-          className={`rounded-xl border p-4 ${
-            item.highlight
-              ? 'border-emerald-500/40 bg-emerald-500/10'
-              : 'border-zinc-800 bg-zinc-900'
-          }`}
-        >
-          <p className="text-xs text-zinc-400">{item.label}</p>
-          <p
-            className={`mt-1 text-base font-semibold sm:text-lg ${
-              item.highlight ? 'text-emerald-400' : 'text-white'
-            }`}
-          >
-            {item.value}
-          </p>
-        </div>
-      ))}
+    <section className="space-y-2">
+      <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-4 py-3.5">
+        <p className="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
+          Total gastado
+        </p>
+        <p className="mt-0.5 text-2xl font-semibold tracking-tight text-emerald-400 sm:text-3xl">
+          {formatCurrency(total)}
+        </p>
+      </div>
+
+      <div className={`grid grid-cols-3 gap-2 ${sectionClass} p-2`}>
+        {secondary.map((item) => (
+          <div key={item.label} className="rounded-lg px-2 py-2 text-center sm:px-3">
+            <p className="text-[10px] text-zinc-500 sm:text-[11px]">{item.label}</p>
+            <p className="mt-0.5 text-sm font-medium text-zinc-200 sm:text-base">
+              {item.value}
+            </p>
+          </div>
+        ))}
+      </div>
     </section>
   )
 }

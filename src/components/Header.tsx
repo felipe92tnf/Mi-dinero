@@ -1,3 +1,5 @@
+import { inputClass, labelClass } from './ui/styles'
+
 interface HeaderProps {
   selectedMonth: string
   onMonthChange: (month: string) => void
@@ -5,17 +7,17 @@ interface HeaderProps {
 
 export function Header({ selectedMonth, onMonthChange }: HeaderProps) {
   return (
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <h1 className="text-2xl font-semibold tracking-tight text-white">
+    <header className="flex items-end justify-between gap-3">
+      <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
         Mi Dinero
       </h1>
-      <label className="flex flex-col gap-1.5 text-sm text-zinc-400">
+      <label className={`${labelClass} shrink-0`}>
         <span>Mes</span>
         <input
           type="month"
           value={selectedMonth}
           onChange={(e) => onMonthChange(e.target.value)}
-          className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+          className={inputClass}
         />
       </label>
     </header>

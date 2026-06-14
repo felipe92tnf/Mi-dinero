@@ -12,6 +12,17 @@ export type Category = (typeof CATEGORIES)[number]
 
 export type ExpenseType = 'fijo' | 'variable'
 
+export interface ExpenseAddition {
+  id: string
+  amount: number
+  date: string
+}
+
+export interface ExpenseInitialMovement {
+  amount: number
+  date: string
+}
+
 export interface Expense {
   id: string
   nombre: string
@@ -20,6 +31,8 @@ export interface Expense {
   tipo: ExpenseType
   categoria?: Category
   recurringId?: string
+  initialMovement?: ExpenseInitialMovement
+  additions?: ExpenseAddition[]
 }
 
 export interface ExpenseFormData {

@@ -31,8 +31,8 @@ function App() {
   })
 
   return (
-    <div className="mx-auto min-h-svh max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
-      <div className="flex flex-col gap-5">
+    <div className="mx-auto min-h-svh max-w-3xl overflow-x-hidden px-3 py-4 sm:px-5 sm:py-6">
+      <div className="flex flex-col gap-4">
         <Header
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}

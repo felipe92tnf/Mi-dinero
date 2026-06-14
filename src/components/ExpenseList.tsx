@@ -1,9 +1,23 @@
 import { useMemo, useState } from 'react'
 import type { AddAmountFormData, Expense } from '../types/expense'
 import { AddAmountModal } from './AddAmountModal'
+import { Chip } from './ui/Chip'
+import {
+  actionBtnDangerClass,
+  actionBtnNeutralClass,
+  cardClass,
+  inputClass,
+  labelClass,
+  sectionClass,
+} from './ui/styles'
 import { formatCurrency, formatDate } from '../utils/storage'
 
 type SortField = 'fecha' | 'cantidad' | 'nombre'
+
+interface Movement {
+  amount: number
+  date: string
+}
 
 interface ExpenseListProps {
   expenses: Expense[]
@@ -13,9 +27,6 @@ interface ExpenseListProps {
   onDelete: (id: string) => void
   onAddAmount: (expense: Expense, data: AddAmountFormData) => void
 }
-
-const inputClass =
-  'w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
 
 const defaultDirection: Record<SortField, 'asc' | 'desc'> = {
   fecha: 'desc',
@@ -37,6 +48,37 @@ function sortExpenses(
   return direction === 'desc' ? sorted.reverse() : sorted
 }
 
+function getExpenseMovements(expense: Expense): Movement[] {
+  if (!expense.additions?.length) return []
+
+  const movements: Movement[] = []
+
+  if (expense.initialMovement) {
+    movements.push(expense.initialMovement)
+  } else {
+    const addedTotal = expense.additions.reduce((sum, item) => sum + item.amount, 0)
+    const initialAmount =
+      Math.round((expense.cantidad - addedTotal) * 100) / 100
+    if (initialAmount > 0) {
+      movements.push({
+        amount: initialAmount,
+        date: expense.additions[0].date,
+      })
+    }
+  }
+
+  for (const addition of expense.additions) {
+    movements.push({ amount: addition.amount, date: addition.date })
+  }
+
+  return movements.sort((a, b) => a.date.localeCompare(b.date))
+}
+
+function formatMovementDate(date: string): string {
+  const [year, month, day] = date.split('-')
+  return `${day}/${month}/${year}`
+}
+
 export function ExpenseList({
   expenses,
   total,
@@ -49,6 +91,8 @@ export function ExpenseList({
   const [sortBy, setSortBy] = useState<SortField>('fecha')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [addingTo, setAddingTo] = useState<Expense | null>(null)
+  const [addAmountKey, setAddAmountKey] = useState(0)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const filteredExpenses = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -74,33 +118,35 @@ export function ExpenseList({
     setAddingTo(null)
   }
 
+  function toggleMovements(expenseId: string) {
+    setExpandedId((current) => (current === expenseId ? null : expenseId))
+  }
+
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-900">
-      <div className="border-b border-zinc-800 px-4 py-3">
-        <h2 className="text-lg font-medium text-white">Gastos del mes</h2>
-        <p className="mt-1 text-sm text-zinc-400">
-          Total acumulado:{' '}
-          <span className="font-semibold text-emerald-400">
-            {formatCurrency(total)}
-          </span>
+    <section className={sectionClass}>
+      <div className="border-b border-zinc-800/80 px-3 py-2.5 sm:px-4">
+        <h2 className="text-base font-medium text-white">Gastos del mes</h2>
+        <p className="mt-0.5 text-xs text-zinc-500">
+          {expenses.length} en este mes ·{' '}
+          <span className="text-emerald-400/90">{formatCurrency(total)}</span>
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 border-b border-zinc-800 p-3 sm:flex-row sm:items-end sm:p-4">
-        <label className="flex flex-1 flex-col gap-1.5 text-sm text-zinc-400">
-          <span>Buscar por nombre</span>
+      <div className="flex flex-col gap-2 border-b border-zinc-800/80 p-2.5 sm:flex-row sm:items-end sm:gap-3 sm:p-3">
+        <label className={`${labelClass} flex-1`}>
+          <span>Buscar</span>
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Ej: Alquiler, Netflix..."
+            placeholder="Nombre del gasto..."
             className={inputClass}
           />
         </label>
 
-        <div className="flex gap-2 sm:w-auto">
-          <label className="flex flex-1 flex-col gap-1.5 text-sm text-zinc-400 sm:min-w-36">
-            <span>Ordenar por</span>
+        <div className="flex gap-2">
+          <label className={`${labelClass} min-w-0 flex-1 sm:w-32`}>
+            <span>Ordenar</span>
             <select
               value={sortBy}
               onChange={(e) => handleSortChange(e.target.value as SortField)}
@@ -116,7 +162,7 @@ export function ExpenseList({
             type="button"
             onClick={toggleSortDirection}
             title={sortDirection === 'asc' ? 'Ascendente' : 'Descendente'}
-            className="mt-auto rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-300 transition hover:bg-zinc-800"
+            className={`${actionBtnNeutralClass} mt-auto shrink-0 px-3`}
           >
             {sortDirection === 'asc' ? '↑' : '↓'}
           </button>
@@ -124,84 +170,132 @@ export function ExpenseList({
       </div>
 
       {expenses.length === 0 ? (
-        <div className="p-8 text-center">
-          <p className="text-zinc-400">No hay gastos en este mes.</p>
-          <p className="mt-1 text-sm text-zinc-500">
+        <div className="px-4 py-10 text-center">
+          <p className="text-sm text-zinc-400">No hay gastos en este mes.</p>
+          <p className="mt-1 text-xs text-zinc-500">
             Añade tu primer gasto con el formulario de arriba.
           </p>
         </div>
       ) : filteredExpenses.length === 0 ? (
-        <div className="p-8 text-center">
-          <p className="text-zinc-400">No se encontraron gastos con ese nombre.</p>
+        <div className="px-4 py-10 text-center">
+          <p className="text-sm text-zinc-400">No se encontraron gastos con ese nombre.</p>
         </div>
       ) : (
-        <ul className="divide-y divide-zinc-800">
-          {filteredExpenses.map((expense) => (
-            <li
-              key={expense.id}
-              className={`flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-4 ${
-                editingId === expense.id ? 'bg-emerald-500/5' : ''
-              }`}
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-medium text-white">{expense.nombre}</p>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      expense.tipo === 'fijo'
-                        ? 'bg-blue-500/20 text-blue-300'
-                        : 'bg-amber-500/20 text-amber-300'
-                    }`}
-                  >
-                    {expense.tipo === 'fijo' ? 'Fijo' : 'Variable'}
-                  </span>
-                  {expense.categoria && (
-                    <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
-                      {expense.categoria}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-sm text-zinc-500">
-                  {formatDate(expense.fecha)}
-                </p>
-              </div>
+        <ul className="flex flex-col gap-2 p-2 sm:gap-2.5 sm:p-3">
+          {filteredExpenses.map((expense) => {
+            const movements = getExpenseMovements(expense)
+            const hasMovements = movements.length > 0
+            const isExpanded = expandedId === expense.id
 
-              <div className="flex items-center justify-between gap-3 sm:justify-end">
-                <p className="text-lg font-semibold text-emerald-400">
-                  {formatCurrency(expense.cantidad)}
-                </p>
-                <div className="flex flex-wrap gap-2">
+            return (
+              <li
+                key={expense.id}
+                className={`${cardClass} p-3 ${
+                  editingId === expense.id ? 'ring-1 ring-emerald-500/30' : ''
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    {hasMovements ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleMovements(expense.id)}
+                        className="truncate text-left text-sm font-medium text-white transition hover:text-emerald-400"
+                      >
+                        {expense.nombre}
+                      </button>
+                    ) : (
+                      <p className="truncate text-sm font-medium text-white">
+                        {expense.nombre}
+                      </p>
+                    )}
+
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                      <Chip variant={expense.tipo === 'fijo' ? 'fijo' : 'variable'}>
+                        {expense.tipo === 'fijo' ? 'Fijo' : 'Variable'}
+                      </Chip>
+                      {expense.categoria && (
+                        <Chip variant="category">{expense.categoria}</Chip>
+                      )}
+                      {hasMovements && (
+                        <button
+                          type="button"
+                          onClick={() => toggleMovements(expense.id)}
+                          className="cursor-pointer"
+                        >
+                          <Chip variant="movements">
+                            {movements.length} mov.
+                          </Chip>
+                        </button>
+                      )}
+                    </div>
+
+                    <p className="mt-1.5 text-[11px] text-zinc-500">
+                      {formatDate(expense.fecha)}
+                    </p>
+                  </div>
+
+                  <p className="shrink-0 text-right text-base font-semibold tracking-tight text-emerald-400 sm:text-lg">
+                    {formatCurrency(expense.cantidad)}
+                  </p>
+                </div>
+
+                <div className="mt-2.5 flex gap-1.5 border-t border-zinc-800/50 pt-2.5 sm:mt-3">
                   <button
                     type="button"
-                    onClick={() => setAddingTo(expense)}
-                    className="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-zinc-800"
+                    onClick={() => {
+                      setAddAmountKey((key) => key + 1)
+                      setAddingTo(expense)
+                    }}
+                    className={`${actionBtnNeutralClass} flex-1 sm:flex-none`}
                   >
                     Sumar
                   </button>
                   <button
                     type="button"
                     onClick={() => onEdit(expense)}
-                    className="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-zinc-800"
+                    className={`${actionBtnNeutralClass} flex-1 sm:flex-none`}
                   >
                     Editar
                   </button>
                   <button
                     type="button"
                     onClick={() => onDelete(expense.id)}
-                    className="rounded-lg border border-red-500/30 px-3 py-1.5 text-sm text-red-400 transition hover:bg-red-500/10"
+                    className={`${actionBtnDangerClass} flex-1 sm:flex-none`}
                   >
                     Eliminar
                   </button>
                 </div>
-              </div>
-            </li>
-          ))}
+
+                {hasMovements && isExpanded && (
+                  <div className="mt-2 rounded-md border border-zinc-800/60 bg-zinc-900/40 px-2.5 py-2">
+                    <p className="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+                      Movimientos
+                    </p>
+                    <ul className="mt-1 space-y-0.5">
+                      {movements.map((movement, index) => (
+                        <li
+                          key={`${movement.date}-${movement.amount}-${index}`}
+                          className="flex items-center justify-between text-[11px] text-zinc-400"
+                        >
+                          <span>{formatMovementDate(movement.date)}</span>
+                          <span className="text-zinc-300">
+                            {formatCurrency(movement.amount)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
 
       {addingTo && (
         <AddAmountModal
-          key={addingTo.id}
+          key={addAmountKey}
           expense={addingTo}
           onConfirm={handleAddAmountConfirm}
           onCancel={() => setAddingTo(null)}

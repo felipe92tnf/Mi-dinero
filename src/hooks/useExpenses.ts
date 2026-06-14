@@ -6,6 +6,7 @@ import {
   getMonthKey,
   loadExpenses,
   saveExpenses,
+  todayDate,
 } from '../utils/storage'
 
 function createId(): string {
@@ -100,6 +101,8 @@ export function useExpenses() {
           return {
             ...expense,
             ...(e.recurringId ? { recurringId: e.recurringId } : {}),
+            ...(e.additions ? { additions: e.additions } : {}),
+            ...(e.initialMovement ? { initialMovement: e.initialMovement } : {}),
           }
         }),
       )
@@ -128,9 +131,12 @@ export function useExpenses() {
 
   function handleAddAmount(expense: Expense, data: AddAmountFormData) {
     const importe = parseFloat(data.importe)
-    if (Number.isNaN(importe) || importe <= 0 || !data.fecha) return
+    const fecha = data.fecha || todayDate()
+    if (Number.isNaN(importe) || importe <= 0) return
 
     const nuevaCantidad = Math.round((expense.cantidad + importe) * 100) / 100
+    const addition = { id: createId(), amount: importe, date: fecha }
+    const isFirstAddition = !(expense.additions?.length)
 
     setExpenses((prev) =>
       prev.map((e) => {
@@ -138,7 +144,11 @@ export function useExpenses() {
         return {
           ...e,
           cantidad: nuevaCantidad,
-          fecha: data.fecha,
+          fecha,
+          ...(isFirstAddition
+            ? { initialMovement: { amount: e.cantidad, date: e.fecha } }
+            : {}),
+          additions: [...(e.additions ?? []), addition],
         }
       }),
     )
@@ -147,7 +157,7 @@ export function useExpenses() {
       setForm((prev) => ({
         ...prev,
         cantidad: String(nuevaCantidad),
-        fecha: data.fecha,
+        fecha,
       }))
     }
   }
