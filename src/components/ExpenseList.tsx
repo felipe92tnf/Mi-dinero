@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import type { DuplicateFormData, Expense } from '../types/expense'
-import { DuplicateExpenseModal } from './DuplicateExpenseModal'
+import type { AddAmountFormData, Expense } from '../types/expense'
+import { AddAmountModal } from './AddAmountModal'
 import { formatCurrency, formatDate } from '../utils/storage'
 
 type SortField = 'fecha' | 'cantidad' | 'nombre'
@@ -8,11 +8,10 @@ type SortField = 'fecha' | 'cantidad' | 'nombre'
 interface ExpenseListProps {
   expenses: Expense[]
   total: number
-  defaultDate: string
   editingId: string | null
   onEdit: (expense: Expense) => void
   onDelete: (id: string) => void
-  onDuplicate: (source: Expense, data: DuplicateFormData) => void
+  onAddAmount: (expense: Expense, data: AddAmountFormData) => void
 }
 
 const inputClass =
@@ -41,16 +40,15 @@ function sortExpenses(
 export function ExpenseList({
   expenses,
   total,
-  defaultDate,
   editingId,
   onEdit,
   onDelete,
-  onDuplicate,
+  onAddAmount,
 }: ExpenseListProps) {
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<SortField>('fecha')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
-  const [duplicating, setDuplicating] = useState<Expense | null>(null)
+  const [addingTo, setAddingTo] = useState<Expense | null>(null)
 
   const filteredExpenses = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -70,10 +68,10 @@ export function ExpenseList({
     setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
   }
 
-  function handleDuplicateConfirm(data: DuplicateFormData) {
-    if (!duplicating) return
-    onDuplicate(duplicating, data)
-    setDuplicating(null)
+  function handleAddAmountConfirm(data: AddAmountFormData) {
+    if (!addingTo) return
+    onAddAmount(addingTo, data)
+    setAddingTo(null)
   }
 
   return (
@@ -175,10 +173,10 @@ export function ExpenseList({
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => setDuplicating(expense)}
+                    onClick={() => setAddingTo(expense)}
                     className="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-zinc-800"
                   >
-                    Repetir
+                    Sumar
                   </button>
                   <button
                     type="button"
@@ -201,12 +199,12 @@ export function ExpenseList({
         </ul>
       )}
 
-      {duplicating && (
-        <DuplicateExpenseModal
-          expense={duplicating}
-          defaultDate={defaultDate}
-          onConfirm={handleDuplicateConfirm}
-          onCancel={() => setDuplicating(null)}
+      {addingTo && (
+        <AddAmountModal
+          key={addingTo.id}
+          expense={addingTo}
+          onConfirm={handleAddAmountConfirm}
+          onCancel={() => setAddingTo(null)}
         />
       )}
     </section>

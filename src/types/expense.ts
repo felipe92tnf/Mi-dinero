@@ -30,10 +30,9 @@ export interface ExpenseFormData {
   categoria: Category | ''
 }
 
-export interface DuplicateFormData {
-  cantidad: string
+export interface AddAmountFormData {
+  importe: string
   fecha: string
-  categoria: Category | ''
 }
 
 export interface RecurringExpense {

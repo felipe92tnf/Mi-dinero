@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { DuplicateFormData, Expense, ExpenseFormData } from '../types/expense'
+import type { AddAmountFormData, Expense, ExpenseFormData } from '../types/expense'
 import {
   currentMonthKey,
   defaultDateForMonth,
@@ -126,20 +126,30 @@ export function useExpenses() {
     setExpenses((prev) => [...prev, ...newExpenses])
   }
 
-  function handleDuplicate(source: Expense, data: DuplicateFormData) {
-    const cantidad = parseFloat(data.cantidad)
-    if (Number.isNaN(cantidad) || cantidad <= 0 || !data.fecha) return
+  function handleAddAmount(expense: Expense, data: AddAmountFormData) {
+    const importe = parseFloat(data.importe)
+    if (Number.isNaN(importe) || importe <= 0 || !data.fecha) return
 
-    const newExpense: Expense = {
-      id: createId(),
-      nombre: source.nombre,
-      cantidad,
-      fecha: data.fecha,
-      tipo: source.tipo,
-      ...(data.categoria ? { categoria: data.categoria } : {}),
+    const nuevaCantidad = Math.round((expense.cantidad + importe) * 100) / 100
+
+    setExpenses((prev) =>
+      prev.map((e) => {
+        if (e.id !== expense.id) return e
+        return {
+          ...e,
+          cantidad: nuevaCantidad,
+          fecha: data.fecha,
+        }
+      }),
+    )
+
+    if (editingId === expense.id) {
+      setForm((prev) => ({
+        ...prev,
+        cantidad: String(nuevaCantidad),
+        fecha: data.fecha,
+      }))
     }
-
-    setExpenses((prev) => [...prev, newExpense])
   }
 
   return {
@@ -155,7 +165,7 @@ export function useExpenses() {
     handleEdit,
     handleDelete,
     handleAddExpenses,
-    handleDuplicate,
+    handleAddAmount,
     resetForm,
   }
 }
