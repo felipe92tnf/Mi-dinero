@@ -5,6 +5,7 @@ import { RecurringSection } from './components/RecurringSection'
 import { Summary } from './components/Summary'
 import { useExpenses } from './hooks/useExpenses'
 import { useRecurringExpenses } from './hooks/useRecurringExpenses'
+import { defaultDateForMonth } from './utils/storage'
 
 function App() {
   const {
@@ -20,6 +21,7 @@ function App() {
     handleEdit,
     handleDelete,
     handleAddExpenses,
+    handleDuplicate,
     resetForm,
   } = useExpenses()
 
@@ -55,9 +57,11 @@ function App() {
         <ExpenseList
           expenses={monthExpenses}
           total={summary.total}
+          defaultDate={defaultDateForMonth(selectedMonth)}
           editingId={editingId}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onDuplicate={handleDuplicate}
         />
 
         <RecurringSection

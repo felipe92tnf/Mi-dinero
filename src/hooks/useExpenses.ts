@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Expense, ExpenseFormData } from '../types/expense'
+import type { DuplicateFormData, Expense, ExpenseFormData } from '../types/expense'
 import {
   currentMonthKey,
   defaultDateForMonth,
@@ -126,6 +126,22 @@ export function useExpenses() {
     setExpenses((prev) => [...prev, ...newExpenses])
   }
 
+  function handleDuplicate(source: Expense, data: DuplicateFormData) {
+    const cantidad = parseFloat(data.cantidad)
+    if (Number.isNaN(cantidad) || cantidad <= 0 || !data.fecha) return
+
+    const newExpense: Expense = {
+      id: createId(),
+      nombre: source.nombre,
+      cantidad,
+      fecha: data.fecha,
+      tipo: source.tipo,
+      ...(data.categoria ? { categoria: data.categoria } : {}),
+    }
+
+    setExpenses((prev) => [...prev, newExpense])
+  }
+
   return {
     expenses,
     selectedMonth,
@@ -139,6 +155,7 @@ export function useExpenses() {
     handleEdit,
     handleDelete,
     handleAddExpenses,
+    handleDuplicate,
     resetForm,
   }
 }

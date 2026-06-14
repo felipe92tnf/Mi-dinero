@@ -30,6 +30,12 @@ export interface ExpenseFormData {
   categoria: Category | ''
 }
 
+export interface DuplicateFormData {
+  cantidad: string
+  fecha: string
+  categoria: Category | ''
+}
+
 export interface RecurringExpense {
   id: string
   nombre: string

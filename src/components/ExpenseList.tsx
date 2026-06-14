@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import type { Expense } from '../types/expense'
+import type { DuplicateFormData, Expense } from '../types/expense'
+import { DuplicateExpenseModal } from './DuplicateExpenseModal'
 import { formatCurrency, formatDate } from '../utils/storage'
 
 type SortField = 'fecha' | 'cantidad' | 'nombre'
@@ -7,9 +8,11 @@ type SortField = 'fecha' | 'cantidad' | 'nombre'
 interface ExpenseListProps {
   expenses: Expense[]
   total: number
+  defaultDate: string
   editingId: string | null
   onEdit: (expense: Expense) => void
   onDelete: (id: string) => void
+  onDuplicate: (source: Expense, data: DuplicateFormData) => void
 }
 
 const inputClass =
@@ -38,13 +41,16 @@ function sortExpenses(
 export function ExpenseList({
   expenses,
   total,
+  defaultDate,
   editingId,
   onEdit,
   onDelete,
+  onDuplicate,
 }: ExpenseListProps) {
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<SortField>('fecha')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [duplicating, setDuplicating] = useState<Expense | null>(null)
 
   const filteredExpenses = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -62,6 +68,12 @@ export function ExpenseList({
 
   function toggleSortDirection() {
     setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+  }
+
+  function handleDuplicateConfirm(data: DuplicateFormData) {
+    if (!duplicating) return
+    onDuplicate(duplicating, data)
+    setDuplicating(null)
   }
 
   return (
@@ -160,7 +172,14 @@ export function ExpenseList({
                 <p className="text-lg font-semibold text-emerald-400">
                   {formatCurrency(expense.cantidad)}
                 </p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDuplicating(expense)}
+                    className="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-zinc-800"
+                  >
+                    Repetir
+                  </button>
                   <button
                     type="button"
                     onClick={() => onEdit(expense)}
@@ -180,6 +199,15 @@ export function ExpenseList({
             </li>
           ))}
         </ul>
+      )}
+
+      {duplicating && (
+        <DuplicateExpenseModal
+          expense={duplicating}
+          defaultDate={defaultDate}
+          onConfirm={handleDuplicateConfirm}
+          onCancel={() => setDuplicating(null)}
+        />
       )}
     </section>
   )
