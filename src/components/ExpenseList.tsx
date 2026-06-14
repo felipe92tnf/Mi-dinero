@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react'
-import type { AddAmountFormData, Expense } from '../types/expense'
+import type { AddAmountFormData, Category, Expense } from '../types/expense'
+import { CATEGORIES } from '../types/expense'
 import { AddAmountModal } from './AddAmountModal'
 import { Chip } from './ui/Chip'
 import {
   actionBtnDangerClass,
+  actionBtnEditClass,
   actionBtnNeutralClass,
+  actionBtnSumClass,
   cardClass,
   inputClass,
   labelClass,
@@ -14,9 +17,18 @@ import { formatCurrency, formatDate } from '../utils/storage'
 
 type SortField = 'fecha' | 'cantidad' | 'nombre'
 
+const UNCATEGORIZED = 'Sin categoría'
+
 interface Movement {
   amount: number
   date: string
+}
+
+interface CategoryGroup {
+  key: string
+  label: string
+  expenses: Expense[]
+  total: number
 }
 
 interface ExpenseListProps {
@@ -46,6 +58,33 @@ function sortExpenses(
   })
 
   return direction === 'desc' ? sorted.reverse() : sorted
+}
+
+function groupByCategory(expenses: Expense[]): CategoryGroup[] {
+  const map = new Map<string, Expense[]>()
+
+  for (const expense of expenses) {
+    const key = expense.categoria ?? UNCATEGORIZED
+    const group = map.get(key) ?? []
+    group.push(expense)
+    map.set(key, group)
+  }
+
+  const groups = Array.from(map.entries()).map(([label, items]) => ({
+    key: label,
+    label,
+    expenses: items,
+    total: items.reduce((sum, item) => sum + item.cantidad, 0),
+  }))
+
+  return groups.sort((a, b) => {
+    if (a.label === UNCATEGORIZED) return 1
+    if (b.label === UNCATEGORIZED) return -1
+    const indexA = CATEGORIES.indexOf(a.label as Category)
+    const indexB = CATEGORIES.indexOf(b.label as Category)
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB
+    return a.label.localeCompare(b.label, 'es')
+  })
 }
 
 function getExpenseMovements(expense: Expense): Movement[] {
@@ -79,6 +118,124 @@ function formatMovementDate(date: string): string {
   return `${day}/${month}/${year}`
 }
 
+interface ExpenseItemProps {
+  expense: Expense
+  editingId: string | null
+  expandedId: string | null
+  onToggleMovements: (id: string) => void
+  onAdd: (expense: Expense) => void
+  onEdit: (expense: Expense) => void
+  onDelete: (id: string) => void
+}
+
+function ExpenseItem({
+  expense,
+  editingId,
+  expandedId,
+  onToggleMovements,
+  onAdd,
+  onEdit,
+  onDelete,
+}: ExpenseItemProps) {
+  const movements = getExpenseMovements(expense)
+  const hasMovements = movements.length > 0
+  const isExpanded = expandedId === expense.id
+
+  return (
+    <li
+      className={`${cardClass} p-3 ${
+        editingId === expense.id ? 'ring-1 ring-emerald-500/30' : ''
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          {hasMovements ? (
+            <button
+              type="button"
+              onClick={() => onToggleMovements(expense.id)}
+              className="truncate text-left text-sm font-medium text-white transition hover:text-emerald-400"
+            >
+              {expense.nombre}
+            </button>
+          ) : (
+            <p className="truncate text-sm font-medium text-white">
+              {expense.nombre}
+            </p>
+          )}
+
+          <div className="mt-1.5 flex flex-wrap items-center gap-1">
+            <Chip variant={expense.tipo === 'fijo' ? 'fijo' : 'variable'}>
+              {expense.tipo === 'fijo' ? 'Fijo' : 'Variable'}
+            </Chip>
+            {hasMovements && (
+              <button
+                type="button"
+                onClick={() => onToggleMovements(expense.id)}
+                className="cursor-pointer"
+              >
+                <Chip variant="movements">{movements.length} mov.</Chip>
+              </button>
+            )}
+          </div>
+
+          <p className="mt-1.5 text-[11px] text-zinc-500">
+            {formatDate(expense.fecha)}
+          </p>
+        </div>
+
+        <p className="shrink-0 text-right text-base font-semibold tracking-tight text-emerald-400 sm:text-lg">
+          {formatCurrency(expense.cantidad)}
+        </p>
+      </div>
+
+      <div className="mt-2.5 flex gap-1.5 border-t border-zinc-800/50 pt-2.5">
+        <button
+          type="button"
+          onClick={() => onAdd(expense)}
+          className={`${actionBtnSumClass} flex-1 sm:flex-none`}
+        >
+          Sumar
+        </button>
+        <button
+          type="button"
+          onClick={() => onEdit(expense)}
+          className={`${actionBtnEditClass} flex-1 sm:flex-none`}
+        >
+          Editar
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(expense.id)}
+          className={`${actionBtnDangerClass} flex-1 sm:flex-none`}
+        >
+          Eliminar
+        </button>
+      </div>
+
+      {hasMovements && isExpanded && (
+        <div className="mt-2 rounded-md border border-zinc-800/60 bg-zinc-900/40 px-2.5 py-2">
+          <p className="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+            Movimientos
+          </p>
+          <ul className="mt-1 space-y-0.5">
+            {movements.map((movement, index) => (
+              <li
+                key={`${movement.date}-${movement.amount}-${index}`}
+                className="flex items-center justify-between text-[11px] text-zinc-400"
+              >
+                <span>{formatMovementDate(movement.date)}</span>
+                <span className="text-zinc-300">
+                  {formatCurrency(movement.amount)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </li>
+  )
+}
+
 export function ExpenseList({
   expenses,
   total,
@@ -93,6 +250,9 @@ export function ExpenseList({
   const [addingTo, setAddingTo] = useState<Expense | null>(null)
   const [addAmountKey, setAddAmountKey] = useState(0)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
+    new Set(),
+  )
 
   const filteredExpenses = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -102,6 +262,11 @@ export function ExpenseList({
 
     return sortExpenses(filtered, sortBy, sortDirection)
   }, [expenses, search, sortBy, sortDirection])
+
+  const categoryGroups = useMemo(
+    () => groupByCategory(filteredExpenses),
+    [filteredExpenses],
+  )
 
   function handleSortChange(field: SortField) {
     setSortBy(field)
@@ -120,6 +285,20 @@ export function ExpenseList({
 
   function toggleMovements(expenseId: string) {
     setExpandedId((current) => (current === expenseId ? null : expenseId))
+  }
+
+  function toggleCategory(categoryKey: string) {
+    setCollapsedCategories((prev) => {
+      const next = new Set(prev)
+      if (next.has(categoryKey)) next.delete(categoryKey)
+      else next.add(categoryKey)
+      return next
+    })
+  }
+
+  function openAddModal(expense: Expense) {
+    setAddAmountKey((key) => key + 1)
+    setAddingTo(expense)
   }
 
   return (
@@ -181,116 +360,56 @@ export function ExpenseList({
           <p className="text-sm text-zinc-400">No se encontraron gastos con ese nombre.</p>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2 p-2 sm:gap-2.5 sm:p-3">
-          {filteredExpenses.map((expense) => {
-            const movements = getExpenseMovements(expense)
-            const hasMovements = movements.length > 0
-            const isExpanded = expandedId === expense.id
+        <div className="flex flex-col gap-3 p-2 sm:gap-4 sm:p-3">
+          {categoryGroups.map((group) => {
+            const isOpen = !collapsedCategories.has(group.key)
+            const countLabel =
+              group.expenses.length === 1 ? '1 gasto' : `${group.expenses.length} gastos`
 
             return (
-              <li
-                key={expense.id}
-                className={`${cardClass} p-3 ${
-                  editingId === expense.id ? 'ring-1 ring-emerald-500/30' : ''
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
+              <section key={group.key}>
+                <button
+                  type="button"
+                  onClick={() => toggleCategory(group.key)}
+                  className="flex w-full items-center justify-between gap-2 rounded-lg px-1 py-1.5 text-left transition hover:bg-zinc-800/30"
+                >
                   <div className="min-w-0 flex-1">
-                    {hasMovements ? (
-                      <button
-                        type="button"
-                        onClick={() => toggleMovements(expense.id)}
-                        className="truncate text-left text-sm font-medium text-white transition hover:text-emerald-400"
-                      >
-                        {expense.nombre}
-                      </button>
-                    ) : (
-                      <p className="truncate text-sm font-medium text-white">
-                        {expense.nombre}
-                      </p>
-                    )}
-
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                      <Chip variant={expense.tipo === 'fijo' ? 'fijo' : 'variable'}>
-                        {expense.tipo === 'fijo' ? 'Fijo' : 'Variable'}
-                      </Chip>
-                      {expense.categoria && (
-                        <Chip variant="category">{expense.categoria}</Chip>
-                      )}
-                      {hasMovements && (
-                        <button
-                          type="button"
-                          onClick={() => toggleMovements(expense.id)}
-                          className="cursor-pointer"
-                        >
-                          <Chip variant="movements">
-                            {movements.length} mov.
-                          </Chip>
-                        </button>
-                      )}
-                    </div>
-
-                    <p className="mt-1.5 text-[11px] text-zinc-500">
-                      {formatDate(expense.fecha)}
+                    <p className="text-sm font-medium text-zinc-200">
+                      {group.label}
+                      <span className="text-zinc-500"> · </span>
+                      <span className="text-emerald-400/90">
+                        {formatCurrency(group.total)}
+                      </span>
                     </p>
+                    <p className="mt-0.5 text-[11px] text-zinc-600">{countLabel}</p>
                   </div>
+                  <span className="shrink-0 text-xs text-zinc-500">
+                    {isOpen ? '▾' : '▸'}
+                  </span>
+                </button>
 
-                  <p className="shrink-0 text-right text-base font-semibold tracking-tight text-emerald-400 sm:text-lg">
-                    {formatCurrency(expense.cantidad)}
-                  </p>
-                </div>
+                <div className="mt-1.5 border-t border-zinc-800/60" />
 
-                <div className="mt-2.5 flex gap-1.5 border-t border-zinc-800/50 pt-2.5 sm:mt-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAddAmountKey((key) => key + 1)
-                      setAddingTo(expense)
-                    }}
-                    className={`${actionBtnNeutralClass} flex-1 sm:flex-none`}
-                  >
-                    Sumar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onEdit(expense)}
-                    className={`${actionBtnNeutralClass} flex-1 sm:flex-none`}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(expense.id)}
-                    className={`${actionBtnDangerClass} flex-1 sm:flex-none`}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-
-                {hasMovements && isExpanded && (
-                  <div className="mt-2 rounded-md border border-zinc-800/60 bg-zinc-900/40 px-2.5 py-2">
-                    <p className="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
-                      Movimientos
-                    </p>
-                    <ul className="mt-1 space-y-0.5">
-                      {movements.map((movement, index) => (
-                        <li
-                          key={`${movement.date}-${movement.amount}-${index}`}
-                          className="flex items-center justify-between text-[11px] text-zinc-400"
-                        >
-                          <span>{formatMovementDate(movement.date)}</span>
-                          <span className="text-zinc-300">
-                            {formatCurrency(movement.amount)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                {isOpen && (
+                  <ul className="mt-2 flex flex-col gap-2">
+                    {group.expenses.map((expense) => (
+                      <ExpenseItem
+                        key={expense.id}
+                        expense={expense}
+                        editingId={editingId}
+                        expandedId={expandedId}
+                        onToggleMovements={toggleMovements}
+                        onAdd={openAddModal}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                      />
+                    ))}
+                  </ul>
                 )}
-              </li>
+              </section>
             )
           })}
-        </ul>
+        </div>
       )}
 
       {addingTo && (

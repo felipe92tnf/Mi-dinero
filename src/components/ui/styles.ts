@@ -3,6 +3,10 @@ export const actionBtnClass =
 
 export const actionBtnNeutralClass = `${actionBtnClass} border-zinc-700/70 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200`
 
+export const actionBtnSumClass = `${actionBtnClass} border-emerald-500/25 bg-emerald-500/10 text-emerald-400/90 hover:bg-emerald-500/20`
+
+export const actionBtnEditClass = `${actionBtnClass} border-blue-500/25 bg-blue-500/10 text-blue-300/90 hover:bg-blue-500/20`
+
 export const actionBtnDangerClass = `${actionBtnClass} border-red-500/25 text-red-400/90 hover:bg-red-500/10`
 
 export const inputClass =
