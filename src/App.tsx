@@ -46,6 +46,7 @@ function App() {
         />
 
         <ExpenseForm
+          expenses={expenses}
           form={form}
           editingId={editingId}
           onChange={setForm}

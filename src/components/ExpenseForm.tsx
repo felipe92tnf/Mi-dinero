@@ -1,7 +1,15 @@
-import { CATEGORIES, type ExpenseFormData } from '../types/expense'
+import { useMemo, useState } from 'react'
+import { CATEGORIES, type Expense, type ExpenseFormData } from '../types/expense'
+import {
+  buildExpenseNameHistory,
+  filterNameSuggestions,
+  type ExpenseNameSuggestion,
+} from '../utils/expenseHistory'
+import { ExpenseNameSuggestions } from './ExpenseNameSuggestions'
 import { inputClass, labelClass, sectionClass } from './ui/styles'
 
 interface ExpenseFormProps {
+  expenses: Expense[]
   form: ExpenseFormData
   editingId: string | null
   onChange: (form: ExpenseFormData) => void
@@ -10,12 +18,28 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({
+  expenses,
   form,
   editingId,
   onChange,
   onSubmit,
   onCancel,
 }: ExpenseFormProps) {
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false)
+
+  const nameHistory = useMemo(
+    () => buildExpenseNameHistory(expenses),
+    [expenses],
+  )
+
+  const suggestions = useMemo(
+    () => filterNameSuggestions(nameHistory, form.nombre),
+    [nameHistory, form.nombre],
+  )
+
+  const showSuggestions =
+    !editingId && suggestionsOpen && suggestions.length > 0
+
   function update<K extends keyof ExpenseFormData>(
     key: K,
     value: ExpenseFormData[K],
@@ -25,7 +49,18 @@ export function ExpenseForm({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setSuggestionsOpen(false)
     onSubmit()
+  }
+
+  function handleSelectSuggestion(suggestion: ExpenseNameSuggestion) {
+    onChange({
+      ...form,
+      nombre: suggestion.nombre,
+      tipo: suggestion.tipo,
+      categoria: suggestion.categoria,
+    })
+    setSuggestionsOpen(false)
   }
 
   return (
@@ -38,7 +73,7 @@ export function ExpenseForm({
       </h2>
 
       <form onSubmit={handleSubmit} className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
-        <label className={`${labelClass} sm:col-span-2`}>
+        <label className={`${labelClass} relative sm:col-span-2`}>
           <span>Nombre</span>
           <input
             type="text"
@@ -46,9 +81,23 @@ export function ExpenseForm({
             autoFocus={!editingId}
             autoComplete="off"
             value={form.nombre}
-            onChange={(e) => update('nombre', e.target.value)}
+            onChange={(e) => {
+              update('nombre', e.target.value)
+              if (!editingId) setSuggestionsOpen(true)
+            }}
+            onFocus={() => {
+              if (!editingId) setSuggestionsOpen(true)
+            }}
+            onBlur={() => {
+              setTimeout(() => setSuggestionsOpen(false), 150)
+            }}
             placeholder="Ej: Supermercado, Gasolina..."
             className={inputClass}
+          />
+          <ExpenseNameSuggestions
+            suggestions={suggestions}
+            visible={showSuggestions}
+            onSelect={handleSelectSuggestion}
           />
         </label>
 
